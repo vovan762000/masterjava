@@ -4,10 +4,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/**
- * gkislin
- * 03.07.2016
- */
+
 public class MainMatrix {
     private static final int MATRIX_SIZE = 1000;
     private static final int THREAD_NUMBER = 10;
@@ -19,6 +16,7 @@ public class MainMatrix {
         final int[][] matrixB = MatrixUtil.create(MATRIX_SIZE);
 
         double singleThreadSum = 0.;
+        double singleModifiedThreadSum = 0.;
         double concurrentThreadSum = 0.;
         int count = 1;
         while (count < 6) {
@@ -28,6 +26,12 @@ public class MainMatrix {
             double duration = (System.currentTimeMillis() - start) / 1000.;
             out("Single thread time, sec: %.3f", duration);
             singleThreadSum += duration;
+
+            start = System.currentTimeMillis();
+            final int[][] matrixCModified = MatrixUtil.singleThreadMultiplyModified(matrixA, matrixB);
+            duration = (System.currentTimeMillis() - start) / 1000.;
+            out("Single thread modified time, sec: %.3f", duration);
+            singleModifiedThreadSum += duration;
 
             start = System.currentTimeMillis();
             final int[][] concurrentMatrixC = MatrixUtil.concurrentMultiply(matrixA, matrixB, executor);
@@ -43,7 +47,9 @@ public class MainMatrix {
         }
         executor.shutdown();
         out("\nAverage single thread time, sec: %.3f", singleThreadSum / 5.);
+        out("Average single thread modified time, sec: %.3f", singleModifiedThreadSum / 5.);
         out("Average concurrent thread time, sec: %.3f", concurrentThreadSum / 5.);
+
     }
 
     private static void out(String format, double ms) {

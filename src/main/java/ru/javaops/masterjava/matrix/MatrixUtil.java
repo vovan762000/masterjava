@@ -1,24 +1,43 @@
 package ru.javaops.masterjava.matrix;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
 
-/**
- * gkislin
- * 03.07.2016
- */
+
 public class MatrixUtil {
 
-    // TODO implement parallel multiplication matrixA*matrixB
     public static int[][] concurrentMultiply(int[][] matrixA, int[][] matrixB, ExecutorService executor) throws InterruptedException, ExecutionException {
         final int matrixSize = matrixA.length;
         final int[][] matrixC = new int[matrixSize][matrixSize];
+        CompletionService<Void> completionService = new ExecutorCompletionService<>(executor);
+        List<Future<Void>> futures = new ArrayList<>();
+        for (int j = 0; j < matrixSize; j++) {
+            int finalJ = j;
+            futures.add(completionService.submit(() -> {
+                int[] thatColumn = new int[matrixSize];
+                for (int k = 0; k < matrixSize; k++) {
+                    thatColumn[k] = matrixB[k][finalJ];
+                }
 
+                for (int i = 0; i < matrixSize; i++) {
+                    int[] thisRow = matrixA[i];
+                    int sum = 0;
+                    for (int k = 0; k < matrixSize; k++) {
+                        sum += thisRow[k] * thatColumn[k];
+                    }
+                    matrixC[i][finalJ] = sum;
+                }
+                return null;
+            }));
+        }
+        for (Future<Void> future : futures) {
+            future.get();
+        }
         return matrixC;
     }
 
-    // TODO optimize by https://habrahabr.ru/post/114797/
     public static int[][] singleThreadMultiply(int[][] matrixA, int[][] matrixB) {
         final int matrixSize = matrixA.length;
         final int[][] matrixC = new int[matrixSize][matrixSize];
@@ -31,6 +50,32 @@ public class MatrixUtil {
                 }
                 matrixC[i][j] = sum;
             }
+        }
+        return matrixC;
+    }
+
+    //https://habrahabr.ru/post/114797/
+    public static int[][] singleThreadMultiplyModified(int[][] matrixA, int[][] matrixB) {
+        final int matrixSize = matrixA.length;
+        final int[][] matrixC = new int[matrixSize][matrixSize];
+        int[] thatColumn = new int[matrixSize];
+
+        try {
+            for (int j = 0; ; j++) {
+                for (int k = 0; k < matrixSize; k++) {
+                    thatColumn[k] = matrixB[k][j];
+                }
+
+                for (int i = 0; i < matrixSize; i++) {
+                    int[] thisRow = matrixA[i];
+                    int sum = 0;
+                    for (int k = 0; k < matrixSize; k++) {
+                        sum += thisRow[k] * thatColumn[k];
+                    }
+                    matrixC[i][j] = sum;
+                }
+            }
+        } catch (IndexOutOfBoundsException ignored) {
         }
         return matrixC;
     }
